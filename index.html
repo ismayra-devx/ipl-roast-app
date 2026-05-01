@@ -98,13 +98,13 @@
                         }]
                     };
 
-                    const response = await fetch("https://script.google.com/macros/s/AKfycbydDdvMiZemwdSmA5xx53Yl34M2JoSnqJW4uwNVSalIn9D-l5kJexvvf2zB9xjug3C5/exec", {
+                    const response = await fetch("https://script.google.com/macros/s/AKfycbwq5hIHe_X1v7znNUul0AJMYMpwhjB81Dsvm3zht7KH6PQnVwhqtadKlgYJcwwpSLm1/exec", {
                         method: "POST",
                         headers: {
                             "Content-Type": "text/plain"
                         },
                         body: JSON.stringify(requestBody)
-                    });
+                    })
 
                     if (!response.ok) {
                         throw new Error("Failed to fetch from the server.");
