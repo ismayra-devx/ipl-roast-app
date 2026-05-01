@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IPL Fantasy Team Roaster</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Using a bold, fun font for the heading and clean font for text -->
+    <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Inter:wght@400;700;900&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>IPL FANTASY ROASTER</h1>
+            <p class="subtitle">Enter your 11 players and let the AI destroy your dreams.</p>
+        </header>
+
+        <main>
+            <div class="card input-section">
+                <label for="teamInput" class="fun-label">Your "Winning" Squad (11 Players):</label>
+                <textarea id="teamInput"
+                    placeholder="1. Virat Kohli&#10;2. MS Dhoni&#10;3. Rohit Sharma&#10;... (paste or type your players here)"></textarea>
+
+
+                <button id="roastBtn" class="action-btn">ROAST MY TEAM 🏏</button>
+            </div>
+
+            <div id="loading" class="hidden">
+                <div class="ball"></div>
+                <p class="loading-text">Analyzing your terrible choices...</p>
+            </div>
+
+            <div id="result-section" class="card hidden">
+                <h2 class="result-title">The Verdict 🔥</h2>
+                <div id="roast-output" class="output-box"></div>
+                <h2 class="result-title mt-4">Better Suggestions 💡</h2>
+                <div id="suggestions-output" class="output-box"></div>
+            </div>
+        </main>
+
+        <footer>
+            <p>Made for fun. Don't take it personally.</p>
+        </footer>
+    </div>
+
+    <!-- Import Google Generative AI SDK via CDN -->
+    <script type="importmap">
+      {
+        "imports": {
+          "@google/generative-ai": "https://esm.run/@google/generative-ai"
+        }
+      }
+    </script>
+    <script type="module">
+        import { GoogleGenerativeAI } from '@google/generative-ai';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const roastBtn = document.getElementById('roastBtn');
+            const teamInput = document.getElementById('teamInput');
+
+
+            const loadingSection = document.getElementById('loading');
+            const resultSection = document.getElementById('result-section');
+            const roastOutput = document.getElementById('roast-output');
+            const suggestionsOutput = document.getElementById('suggestions-output');
+
+            roastBtn.addEventListener('click', async () => {
+                const teamText = teamInput.value.trim();
+                // PASTE YOUR API KEY BELOW:
+                const apiKey = "AIzaSyDzy3uDwOYloP3BvKT8JYegj3w1fmJ-AWk";
+
+                if (!teamText) {
+                    alert('Please enter your 11 players first!');
+                    return;
+                }
+
+                if (apiKey === "YOUR_API_KEY_HERE") {
+                    alert('Please open index.html in VS Code and paste your real API key in the code to run the roast!');
+                    return;
+                }
+
+                // Show loading state
+                roastBtn.disabled = true;
+                roastBtn.innerText = 'ROASTING...';
+                loadingSection.classList.remove('hidden');
+                resultSection.classList.add('hidden');
+                roastOutput.innerHTML = '';
+                suggestionsOutput.innerHTML = '';
+
+                try {
+                    // Initialize Gemini
+                    const genAI = new GoogleGenerativeAI(apiKey);
+                    // We use gemini-2.5-flash as it is supported by your key and very fast
+                    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+
+                    const prompt = `
+                    Act as a brutal, hilarious Gen Z Indian cricket expert roasting an IPL fantasy team. 
+                    The user has provided their 11 players. Keep it lighthearted but savage.
+                    Use a lot of Gen Z slang and Hinglish (a mix of Hindi and English written in English script).
+                    Make it relatable for the Indian youth.
+                    
+                    User's team:
+                    ${teamText}
+
+                    Please output your response EXACTLY in the following JSON format, with no markdown formatting or extra text outside the JSON:
+                    {
+                        "roast": "Your hilarious, savage Hinglish roast of their team selection here...",
+                        "suggestions": "A list of 3-4 better alternative players they should have picked instead, with a funny Hinglish reason why."
+                    }
+                    `;
+
+                    const result = await model.generateContent(prompt);
+                    const responseText = result.response.text();
+
+                    // Clean up the response in case the model wraps it in markdown like ```json ... ```
+                    let cleanedText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
+
+                    let data;
+                    try {
+                        data = JSON.parse(cleanedText);
+                    } catch (parseError) {
+                        console.error("Failed to parse JSON", cleanedText);
+                        throw new Error("The AI got confused. Please try again.");
+                    }
+
+                    // Simulate typing effect for the output
+                    typeText(roastOutput, data.roast, 20, () => {
+                        typeText(suggestionsOutput, data.suggestions, 20);
+                    });
+
+                    // Show results
+                    loadingSection.classList.add('hidden');
+                    resultSection.classList.remove('hidden');
+
+                } catch (error) {
+                    console.error(error);
+                    alert(`Error: ${error.message}\nMake sure your API key is valid!`);
+                    loadingSection.classList.add('hidden');
+                } finally {
+                    roastBtn.disabled = false;
+                    roastBtn.innerText = 'ROAST MY TEAM 🏏';
+                }
+            });
+
+            // Helper function for typing effect
+            function typeText(element, text, speed, callback) {
+                element.innerHTML = '';
+                
+                // Sanitize input: AI might return an array or object
+                if (Array.isArray(text)) {
+                    text = text.map(item => {
+                        if (typeof item === 'object' && item !== null) {
+                            return Object.values(item).join(' - ');
+                        }
+                        return String(item);
+                    }).join('\n\n');
+                } else if (!text) {
+                    text = "Hmm, the AI was too stunned to speak. No suggestions provided!";
+                } else if (typeof text !== 'string') {
+                    text = JSON.stringify(text, null, 2);
+                }
+
+                let i = 0;
+                function typeWriter() {
+                    if (i < text.length) {
+                        // Handle basic markdown-like bold text if AI provides it
+                        if (text.substr(i, 2) === '**') {
+                            let endBold = text.indexOf('**', i + 2);
+                            if (endBold !== -1) {
+                                element.innerHTML += `<strong>${text.substring(i + 2, endBold)}</strong>`;
+                                i = endBold + 2;
+                            } else {
+                                element.innerHTML += text.charAt(i);
+                                i++;
+                            }
+                        } else if (text.charAt(i) === '\n') {
+                            element.innerHTML += '<br>';
+                            i++;
+                        } else {
+                            element.innerHTML += text.charAt(i);
+                            i++;
+                        }
+                        setTimeout(typeWriter, speed);
+                    } else if (callback) {
+                        callback();
+                    }
+                }
+                typeWriter();
+            }
+        });
+    </script>
+</body>
+
+</html>
